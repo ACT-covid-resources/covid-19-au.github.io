@@ -1,64 +1,33 @@
-import React from "react";
+import React, { Fragment } from "react";
 import Grid from "@material-ui/core/Grid";
-
 import ageGenderData from "../data/ageGender";
-import stateData from "../data/state";
-import ReactEcharts from "echarts-for-react";
+import ReactGA from "react-ga";
+import latestAusData from "../data/stateCaseData";
 
-// const color = {
-//   male: "#ff0000",
-//   female: "#0000ff",
-//   notStated: "#000000"
-// };
+import GeneralLineChart from "./GeneralLineChart";
+import renderStatus from "./renderStatus";
+import RegionalCasesBarChart from "../HomePage/CrawlerDataVis/RegionalCasesBarChart";
+import MultiDataTypeBarChart from "../HomePage/CrawlerDataVis/MultiDataTypeBarChart";
+import PopulationPyramid from "../HomePage/CrawlerDataVis/PopulationPyramid";
+import RegionalCasesTreeMap from "../HomePage/CrawlerDataVis/RegionalCasesTreeMap";
+import RegionType from "../HomePage/CrawlerDataTypes/RegionType";
+import getDataDownloader from "../HomePage/CrawlerData/DataDownloader";
+import ConfirmedMap from "../HomePage/ConfirmedMap"
+import Acknowledgement from "../Acknowledgment";
+import AgeBarChart from "../HomePage/CrawlerDataVis/AgeBarChart";
+import getRemoteData from "../HomePage/CrawlerData/RemoteData";
+import GenderPieChart from "../HomePage/CrawlerDataVis/GenderPieChart";
 
 const stateNameMapping = {
-  VIC: "Victoria",
-  NSW: "New South Wales",
-  QLD: "Queensland",
-  ACT: "Australian Capital Territory",
-  SA: "South Australia",
-  WA: "Western Australia",
-  TAS: "Tasmania",
-  NT: "Northern Territory"
+    VIC: "Victoria",
+    NSW: "New South Wales",
+    QLD: "Queensland",
+    ACT: "Australian Capital Territory",
+    SA: "South Australia",
+    WA: "Western Australia",
+    TAS: "Tasmania",
+    NT: "Northern Territory",
 };
-
-const ALL_INDEX = 0;
-const MALE_INDEX = 1;
-const FEMALE_INDEX = 2;
-const NOT_STATED_INDEX = 3;
-
-/**
- * get gender data for expect state
- * @param {Object} expectState state object contains age and gender data
- * @return {Array} list of gender data
- */
-function getGenderData(expectState) {
-  return expectState["gender"];
-}
-
-/**
- * get age chart labels
- * @param {Object} expectState state object contains age and gender data
- * @return {Array} age chart labels
- */
-function getAgeChartLabels(expectState) {
-  return Object.keys(expectState["age"]);
-}
-
-/**
- * get different age range data for different state
- * @param {Array} ageLabel list of different age range
- * @param {int} genderIndex gender indicator, 0 for all, 1 for male, 2 for female, 3 for not stated
- * @param {String} expectState expect state
- * @return {Array} list of age data
- */
-function getAgeData(ageLabel, genderIndex, expectState) {
-  let list = [];
-  for (let i = 0; i < ageLabel.length; i++) {
-    list.push(expectState["age"][ageLabel[i]][genderIndex]);
-  }
-  return list;
-}
 
 /**
  * get choosen state data
@@ -66,226 +35,327 @@ function getAgeData(ageLabel, genderIndex, expectState) {
  * @return {Object} object which contains age and gender data for a specific state. Return null if the choosen state data is not available
  */
 function getExpectStateData(state) {
-  return state.toUpperCase() in ageGenderData ? ageGenderData[state] : null;
+    return state.toUpperCase() in ageGenderData ? ageGenderData[state] : null;
 }
 
-function getLatestData(state) {
-  console.log("State: ", state);
-  let latestDate = Object.keys(stateData)[Object.keys(stateData).length - 1];
-  let latestData = stateData[latestDate][state];
-  console.log(latestData);
-}
-
-function setGenderOption(expectState) {
-  const genderLabel = ["Male", "Female", "Not Stated"];
-  const genderData = getGenderData(expectState);
-  // create dataset for gender graph display
-  let dataArr = [];
-  for (let i = 0; i < genderData.length; i++) {
-    let tempData = { value: genderData[i], name: genderLabel[i] };
-    dataArr.push(tempData);
-  }
-
-  let series = new Series();
-  let pieSeries = new PieSeries("gender", dataArr);
-  pieSeries.setRadius("40%", "70%");
-  series.addSubSeries(pieSeries);
-
-  let tempOption = {
-    title: {
-      text: "Gender Chart"
-    },
-    tooltip: {
-      trigger: "item",
-      formatter: "{a} <br /> {b}: {c} ({d}%)"
-    },
-    legend: {
-      data: genderLabel,
-      top: "7%"
-    },
-    series: series.getSeriesList()
-  };
-  return tempOption;
-}
-
-function setAgeOption(expectState) {
-  const ageChartLabels = getAgeChartLabels(expectState);
-  const ageChartLegend = ["All", "Male", "Female", "Not Stated"];
-  let ageDataList = [];
-  ageDataList.push(getAgeData(ageChartLabels, ALL_INDEX, expectState)); // all age data
-  ageDataList.push(getAgeData(ageChartLabels, MALE_INDEX, expectState)); // male age data
-  ageDataList.push(getAgeData(ageChartLabels, FEMALE_INDEX, expectState)); // female age data
-  ageDataList.push(getAgeData(ageChartLabels, NOT_STATED_INDEX, expectState)); // not stated age data
-  let ageOptionSeries = new Series();
-  for (let i = 0; i < ageDataList.length; i++) {
-    let tempBarSeries = new BarSeries(ageChartLegend[i], ageDataList[i]);
-    ageOptionSeries.addSubSeries(tempBarSeries);
-  }
-
-  let tempOption = {
-    tooltip: {
-      trigger: "axis",
-      axisPointer: {
-        type: "cross",
-        crossStyle: {
-          color: "#999"
-        }
-      }
-    },
-    title: {
-      text: "Age Range Chart"
-    },
-    legend: {
-      data: ageChartLegend,
-      top: "7%",
-      selected: {
-        Male: true,
-        Female: true,
-        "Not Stated": true,
-        All: false
-      }
-    },
-    xAxis: {
-      type: "category",
-      data: ageChartLabels,
-      axisPointer: {
-        type: "shadow"
-      }
-    },
-    yAxis: {},
-    series: ageOptionSeries.getSeriesList()
-  };
-  return tempOption;
-}
-
-function setGeneralBarOption(state) {
-  getLatestData(state);
-}
-
-function setGeneralLineOption() {
-
-}
-
-function StateChart({ state }) {
-  // get choosen state data
-  const expectStateData = getExpectStateData(state);
-
-  let genderOption;
-  let ageOption;
-  let generalBarOption;
-  if (expectStateData !== null) {
-    genderOption = setGenderOption(expectStateData);
-    ageOption = setAgeOption(expectStateData);
-    generalBarOption = setGeneralBarOption(state.toUpperCase());
-    console.log(generalBarOption);
-  }
-
-  if (expectStateData !== null) {
-    return (
-      <Grid container spacing={1} justify="center" wrap="wrap">
-        <Grid item xs={11}>
-          <h1 style={{ textAlign: "center", paddingTop: "1%" }}>
-            {stateNameMapping[state]}
-          </h1>
-        </Grid>
-        <Grid item xs={11} sm={11} md={4} xl={4}>
-          <div className="card">
-            <h2>Cases by Gender</h2>
-            <ReactEcharts option={genderOption} />
-          </div>
-        </Grid>
-        <Grid item xs={11} sm={11} md={4} xl={6}>
-          <div className="card">
-            <h2>Cases by Age Group</h2>
-            <ReactEcharts option={ageOption} />
-          </div>
-        </Grid>
-        <Grid item xs={11} sm={11} md={4} xl={6}>
-          <div className="card">
-            <h2>Cases by Gender Information - Bar</h2>
-            <ReactEcharts option={ageOption} />
-          </div>
-        </Grid>
-        <Grid item xs={11} sm={11} md={4} xl={6}>
-          <div className="card">
-            <h2>Cases by Gender Information - Line</h2>
-            <ReactEcharts option={ageOption} />
-          </div>
-        </Grid>
-      </Grid>
-    );
-  } else {
-    return (
-      <Grid item xs={11} sm={11} md={5}>
-        <h2 style={{ textAlign: "center" }}>
-          We are working on acquiring detailed data for {state}!
-        </h2>
-        <br />
-        <h5 style={{ textAlign: "center" }}>
-          If you have reliable source for such data, please let us know through
-          the{" "}
-          <a href="https://docs.google.com/forms/d/e/1FAIpQLSeX4RU-TomFmq8HAuwTI2_Ieah60A95Gz4XWIMjsyCxZVu7oQ/viewform?usp=sf_link">
-            this
-          </a>{" "}
-          form.
-        </h5>
-      </Grid>
-    );
-  }
-}
-
-class Series {
-  constructor() {
-    this.list = [];
-  }
-
-  addSubSeries(subSeries) {
-    this.list.push(subSeries);
-  }
-
-  getSeriesList() {
-    return this.list;
-  }
-}
-
-class SubSeries {
-  constructor(name, data) {
-    this.name = name;
-    this.data = data;
-  }
-}
-
-class BarSeries extends SubSeries {
-  constructor(name, data) {
-    super(name, data);
-    this.type = "bar";
-  }
-}
-
-class PieSeries extends SubSeries {
-  constructor(name, data) {
-    super(name, data);
-    this.type = "pie";
-    this.isDoughnut = false;
-    this.radius = 0;
-  }
-
-  setRadius(innerRadius, outerRadius) {
-    if (innerRadius !== "0%" || innerRadius !== 0) {
-      this.isDoughnut = true;
-      this.label = {
-        show: false,
-        position: "center"
-      };
-      this.emphasis = {
-        label: {
-          show: true,
-          fontWeight: "bold"
-        }
-      };
+class StateChart extends React.Component {
+    constructor(props) {
+        // Params for props: state/dataType/timePeriod
+        super(props);
     }
-    this.radius = [innerRadius, outerRadius];
-  }
+
+    render() {
+        const statusUpdateTime = latestAusData["updatedTime"];
+
+        ReactGA.pageview("/state/" + this.props.state);
+
+        let infectionSources = (
+            <Grid style={{minWidth: '48%', maxWidth: '700px'}} item xs={11} sm={11} md={10} lg={5}>
+                <div className="card">
+                    <h2>Infection Sources</h2>
+                    <MultiDataTypeBarChart ref={(el) => this.multiDataTypeAreaChart = el} />
+                </div>
+            </Grid>
+        );
+        let mostActive10Regions = (
+            <Grid style={{minWidth: '48%', maxWidth: '700px'}} item xs={11} sm={11} md={10} lg={5}>
+                <div className="card">
+                    <h2>Most Active Regions</h2>
+                    <RegionalCasesBarChart ref={(el) => this.areaChart = el} />
+                    {/*<RegionalCasesHeatMap ref={(el) => this.bubbleChart = el} />*/}
+                </div>
+            </Grid>
+        );
+        let casesShownAsArea = (
+            <Grid style={{minWidth: '48%', maxWidth: '900px'}} item xs={11} sm={11} md={11} lg={11}>
+                <div className="card">
+                    <h2>Cases Shown as Area</h2>
+                    <RegionalCasesTreeMap ref={(el) => this.treeMap = el} />
+                </div>
+            </Grid>
+        );
+        let genderBalance = (
+            <div className="card">
+                <h2>Gender Balance</h2>
+
+                <GenderPieChart ref={el => {this.genderPieChart = el}} />
+            </div>
+        );
+
+        return (
+            <Grid container spacing={1} justify="center" wrap="wrap">
+                <Grid style={{minWidth: '48%', maxWidth: '700px'}} item xs={11} sm={11} md={10} lg={5}>
+                    <div className="card">
+                        <div className="table">
+                            {/* Display some basic current case stats */}
+                            <h2>{stateNameMapping[this.props.state]}</h2>
+                            {renderStatus(this.props.state.toUpperCase())}
+                        </div>
+                    </div>
+
+                    {/*<div className="card">
+                        <h2>Current Statistics</h2>
+                        <GeneralBarChart state={this.props.state} />
+                    </div>*/}
+
+                    <div className="card">
+                        <h2>Historical Data</h2>
+                        {/* Display "Historical Statistics" chart */}
+                        <GeneralLineChart state={this.props.state} />
+                    </div>
+
+                    {this.props.state !== 'NT' && this.props.state !== 'TAS' && this.props.state !== 'ACT' ? genderBalance : ''}
+                </Grid>
+
+                <Grid style={{minWidth: '48%', maxWidth: '700px'}} item xs={11} sm={11} md={10} lg={5}>
+                    <div className="card" style={{
+                        display: 'flex',
+                        flexDirection: 'column'
+                    }}>
+                        <h2 style={{ display: 'flex' }}
+                            aria-label="Casemap">Case Map<div style={{
+                                alignSelf: "flex-end",
+                                marginLeft: "auto",
+                                fontSize: "60%"
+                            }}>
+                                <Acknowledgement>
+                                </Acknowledgement>
+                            </div>
+                        </h2>
+                        <ConfirmedMap stateName={'AU-'+this.props.state}
+                                      dataType={this.props.dataType}
+                                      timePeriod={this.props.timePeriod}
+                                      height={"60vh"}/>
+                    </div>
+                </Grid>
+
+                {true ? (
+                    <Fragment>
+                        {/* "Cases by Age Group" chart */}
+                        <Grid style={{minWidth: '48%', maxWidth: '700px'}} item xs={11} sm={11} md={10} lg={5}>
+                            <div className="card">
+                                <h2>Age Distribution</h2>
+                                <PopulationPyramid ref={(el) => this.populationPyramid = el} />
+                            </div>
+                        </Grid>
+                        <Grid style={{minWidth: '48%', maxWidth: '700px'}} item xs={11} sm={11} md={10} lg={5}>
+                            <div className="card">
+                                <h2>Age Distribution Over Time</h2>
+                                <AgeBarChart ref={(el) => this.ageBarChart = el} />
+                            </div>
+                        </Grid>
+                    </Fragment>
+                ) : ''}
+
+                {this.props.state !== 'NT' && this.props.state !== 'TAS' ? infectionSources : ''}
+
+                {this.props.state !== 'NT' ? mostActive10Regions : ''}
+                {this.props.state !== 'NT' ? casesShownAsArea : ''}
+            </Grid>
+        );
+    }
+
+    /********************************************************************
+     * On initialization triggers
+     ********************************************************************/
+
+    componentDidMount() {
+        this.__initPlotlyJSCharts();
+    }
+
+    async __initPlotlyJSCharts() {
+        // TODO: FIX NT!!!! ===========================================================================================
+
+        this.remoteData = await getRemoteData();
+        this.dataDownloader = await getDataDownloader(this.remoteData);
+
+        let regionParent = 'au-'+this.props.state.toLowerCase(),
+            regionSchema;
+
+        if (regionParent === 'au-qld') regionSchema = 'hhs';
+        else if (regionParent === 'au-tas') regionSchema = 'ths';
+        else if (regionParent === 'au-nt') regionSchema = 'admin_1';
+        else if (regionParent === 'au-act') regionSchema = 'sa3';
+        else regionSchema = 'lga';
+
+        this.__initTreeMap(regionSchema, regionParent);
+        this.__initAreaChart(regionSchema, regionParent);
+        this.__initInfectionSource(regionParent);
+
+        if (this.populationPyramid) {
+            this.__initPopulationPyramid(regionParent);
+        }
+
+        if (this.ageBarChart) {
+            this.__initAgeBarChart(regionParent);
+        }
+
+        if (this.genderPieChart) {
+            this.__initGenderPieChart(regionParent);
+        }
+    }
+
+    /********************************************************************
+     * Pie charts
+     ********************************************************************/
+
+    async __initGenderPieChart(regionParent) {
+        let totalCasesInst = await this.dataDownloader.getCaseData('total', 'admin_1', 'au');
+        let femaleCasesInst = await this.dataDownloader.getCaseData('total_female', 'admin_1', 'au');
+        let maleCasesInst = await this.dataDownloader.getCaseData('total_male', 'admin_1', 'au');
+
+        let regionType = new RegionType('admin_1', 'au', regionParent);
+        this.genderPieChart.setCasesInst(totalCasesInst, maleCasesInst, femaleCasesInst, regionType);
+    }
+
+    /********************************************************************
+     * Horizontal bar/area charts
+     ********************************************************************/
+
+    /**
+     *
+     * @param regionSchema
+     * @returns {Promise<void>}
+     * @private
+     */
+    async __initAreaChart(regionSchema, regionParent) {
+        let activeCaseData = await this.dataDownloader.getCaseData(
+            'status_active', regionSchema, regionParent
+        );
+        let newCaseData = await this.dataDownloader.getCaseData(
+            'new', regionSchema, regionParent
+        );
+
+        if (!this.areaChart) {
+            return;
+        }
+        this.areaChart.setCasesInsts(activeCaseData, newCaseData);
+    }
+
+    /**
+     *
+     * @param regionParent
+     * @returns {Promise<void>}
+     * @private
+     */
+    async __initInfectionSource(regionParent) {
+        if (!this.multiDataTypeAreaChart) {
+            return;
+        }
+
+        let casesInsts = [];
+        for (let dataType of [
+            'source_confirmed',
+            'source_community',
+            'source_under_investigation',
+            'source_overseas'
+        ]) {
+            if (regionParent.toLowerCase() === 'au-vic') {
+                dataType += '_active';
+            }
+
+            let casesInst = await this.dataDownloader.getCaseData(
+                dataType, 'admin_1', 'au'
+            );
+            if (casesInst) {
+                casesInsts.push(casesInst);
+            }
+        }
+
+        this.multiDataTypeAreaChart.setCasesInst(
+            casesInsts,
+            new RegionType('admin_1', 'au', regionParent),
+            regionParent.toLowerCase() === 'au-vic'
+        );
+    }
+
+    /**
+     *
+     * @param regionParent
+     * @returns {Promise<void>}
+     * @private
+     */
+    async __initAgeBarChart(regionParent) {
+        let totalCaseData = await this.dataDownloader.getCaseData(
+                'total', 'admin_1', 'au'
+        );
+        if (!this.ageBarChart) {
+            return;
+        }
+        this.ageBarChart.setCasesInst(
+            totalCaseData,
+            new RegionType('admin_1', 'au', regionParent)
+        )
+    }
+    
+    /********************************************************************
+     * Vertical bar charts
+     ********************************************************************/
+
+    /**
+     *
+     * @param regionParent
+     * @returns {Promise<void>}
+     * @private
+     */
+    async __initPopulationPyramid(regionParent) {
+        let femaleData = await this.dataDownloader.getCaseData(
+            'total_female', 'admin_1', 'au'
+        );
+        let maleData = await this.dataDownloader.getCaseData(
+            'total_male', 'admin_1', 'au'
+        );
+        let regionType = new RegionType(
+            'admin_1', 'au', regionParent
+        );
+
+        if (!this.populationPyramid) {
+            return;
+        } else if (maleData.getAgeRanges(regionType).length && femaleData.getAgeRanges(regionType).length) {
+            this.populationPyramid.setCasesInst(
+                maleData, femaleData, regionType
+            );
+        } else {
+            // TODO: Display age totals if male/female breakdowns not available!
+            this.populationPyramid.setCasesInst(
+                await this.dataDownloader.getCaseData(
+                    'total', 'admin_1', 'au'
+                ), null, regionType
+            );
+        }
+    }
+
+    /********************************************************************
+     * Tree maps
+     ********************************************************************/
+
+    /**
+     *
+     * @param regionSchema
+     * @param regionParent
+     * @returns {Promise<void>}
+     * @private
+     */
+    async __initTreeMap(regionSchema, regionParent) {
+        let totalCaseData = await this.dataDownloader.getCaseData(
+            'total', regionSchema, regionParent
+        );
+        let newCaseData = await this.dataDownloader.getCaseData(
+            'new', regionSchema, regionParent
+        );
+        let activeCaseData = await this.dataDownloader.getCaseData(
+            'status_active', regionSchema, regionParent
+        );
+
+        if (!this.treeMap) {
+            return;
+        } else if (!activeCaseData || !activeCaseData.datatypeInData()) {
+            // Revert to 21 days if "status_active" isn't available
+            this.treeMap.setCasesInst(null, newCaseData, totalCaseData);
+        } else {
+            this.treeMap.setCasesInst(activeCaseData, newCaseData, totalCaseData);
+        }
+    }
 }
 
 export default StateChart;

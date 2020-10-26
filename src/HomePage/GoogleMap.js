@@ -3,12 +3,23 @@ import ReactGA from "react-ga";
 import ausPop from '../data/ausPop'
 
 import Acknowledgement from "../Acknowledgment"
-import NativeSelect from '@material-ui/core/NativeSelect'
+import ButtonGroup from '@material-ui/core/ButtonGroup';
+import Button from '@material-ui/core/Button';
+import Tooltip from '@material-ui/core/Tooltip';
 
-import { Chart } from "react-google-charts";
+// import i18n bundle
+import i18next from '../i18n';
+import GoogleMapDropin from "./GoogleMapDropin";
 
 function GoogleMap({ province, newData }) {
     // Colour gradients for the map: https://material.io/design/color/#tools-for-picking-colors
+    const pinkGradient = [
+        '#fee3eb',
+        '#fa8cae',
+        '#f75c8d',
+        '#f0005c'
+    ];
+
     const redGradient = [
         '#fce7e6',
         '#ffc8b9',
@@ -31,7 +42,7 @@ function GoogleMap({ province, newData }) {
     ];
 
     const [loading, setLoading] = useState(true);
-    const [mapType, setMapType] = useState('confirmed-cases');
+    const [mapType, setMapType] = useState('active-cases');
     const [mapGradient, setMapGradient] = useState(redGradient);
 
     useEffect(() => {
@@ -42,7 +53,7 @@ function GoogleMap({ province, newData }) {
 
     const [myData, setMyData] = useState(null);
     useEffect(() => {
-
+        ReactGA.event({ category: 'casesMap', action: mapType });
         let translate = {
             "NSW": "AU-NSW",
             "ACT": "AU-ACT",
@@ -52,11 +63,15 @@ function GoogleMap({ province, newData }) {
             "QLD": "AU-QLD",
             "SA": "AU-SA",
             "TAS": "AU-TAS",
-        }
+        };
 
         // Set the hover label and colour gradient
         let label = "";
         switch (mapType) {
+            case 'active-cases':
+                label = 'Active';
+                setMapGradient(pinkGradient);
+                break;
             case 'confirmed-cases':
                 label = 'Confirmed';
                 setMapGradient(redGradient);
@@ -70,7 +85,7 @@ function GoogleMap({ province, newData }) {
                 setMapGradient(redGradient);
                 break;
             case 'tested':
-                label = "Tested"
+                label = "Tested";
                 setMapGradient(blueGradient);
                 break;
             case 'relative-tests':
@@ -82,7 +97,13 @@ function GoogleMap({ province, newData }) {
                 setMapGradient(blueGradient);
                 break;
         }
-        let temp = [["state", label]];
+
+        let temp;
+        if (mapType === "test-strike") {
+            temp = [["state", label, { role: 'tooltip' }]];
+        } else {
+            temp = [["state", label]];
+        }
 
         // Set data values
         for (let i = 0; i < newData.length; i++) {
@@ -111,14 +132,38 @@ function GoogleMap({ province, newData }) {
                     if (newData[i][4] === "N/A" || newData[i][1] === "N/A") { continue; }
                     let strikeRate = newData[i][1] / newData[i][4] * 100;
                     // 1 decimal place
-                    value = Math.round(strikeRate);
+                    value = Math.round(strikeRate * 100) / 100;
+                    break;
+                case 'active-cases':
+                    value = newData[i][5];
                     break;
             }
-            // Don't include if there's no data
-            if (value === "N/A") { continue; }
 
-            // v: Tooltip text, f: ISO region code
-            temp.push([{ v: translate[newData[i][0]], f: newData[i][0] }, parseInt(value)]);
+            // Don't include if there's no data
+            if (value === "N/A") {
+                continue;
+            }
+
+            let isoRegionCode = newData[i][0];
+            if (mapType === 'test-strike') {
+                // v: Tooltip text, f: ISO region code
+                temp.push([
+                    {
+                        v: translate[isoRegionCode],
+                        f: isoRegionCode
+                    },
+                    parseFloat(value),
+                    "Test Positive Rate: " + parseFloat(value) + '%'
+                ]);
+            } else {
+                temp.push([
+                    {
+                        v: translate[isoRegionCode],
+                        f: isoRegionCode
+                    },
+                    parseFloat(value)
+                ]);
+            }
         }
 
         setMyData(temp)
@@ -137,37 +182,105 @@ function GoogleMap({ province, newData }) {
         }
     };
 
-    const toggleData = (e) => {
-        setMapType(e.target.value);
-        ReactGA.event({ category: 'casesMap', action: e.target.value });
-    }
+    const activeStyles = {
+        color: 'black',
+        borderColor: '#8ccfff',
+        // backgroundColor: '#e6ffff',
+        padding: "1px",
+        zIndex: 10,
+        outline: "none",
+        paddingLeft: "5px",
+        paddingRight: "5px",
+        fontSize: "80%",
+        marginBottom: "1rem"
+    };
+    const activeStylesPink = {
+        color: 'black',
+        borderColor: '#f75c8d',
+        // backgroundColor: '#ffe6e6',
+        padding: "1px",
+        zIndex: 10,
+        outline: "none",
+        paddingLeft: "5px",
+        paddingRight: "5px",
+        fontSize: "80%",
+        marginBottom: "1rem"
+    };
+    const activeStylesRed = {
+        color: 'black',
+        borderColor: '#ff7e5f',
+        // backgroundColor: '#ffe6e6',
+        padding: "1px",
+        zIndex: 10,
+        outline: "none",
+        paddingLeft: "5px",
+        paddingRight: "5px",
+        fontSize: "80%",
+        marginBottom: "1rem"
+    };
+    const inactiveStyles = {
+        color: 'grey',
+        borderColor: '#e3f3ff',
+        padding: "1px",
+        outline: "none",
+        paddingLeft: "5px",
+        paddingRight: "5px",
+        fontSize: "80%",
+        marginBottom: "1rem"
+    };
+    const inactiveStylesRed = {
+        color: 'grey',
+        borderColor: '#fce7e6',
+        padding: "1px",
+        outline: "none",
+        paddingLeft: "5px",
+        paddingRight: "5px",
+        fontSize: "80%",
+        marginBottom: "1rem"
+    };
+
+
+    const handleChange = (mapType) => {
+        setMapType(mapType.target.value);
+    };
 
     return (
-        loading ? <div className="loading">Loading...</div> :
+        loading ? <div className="loading">{i18next.t("homePage:misc.loadingText")}</div> :
             <div className="stateMap">
-                <h2 style={{ display: "flex" }}>Cases by State {province ? `· ${province.name}` : false}
+                <h2 style={{ display: "flex" }} aria-label="Cases of COVID 19 by state">{i18next.t("homePage:caseByState.title")}{province ? `· ${province.name}` : false}
                     <div style={{ alignSelf: "flex-end", marginLeft: "auto", fontSize: "60%" }}>
                         <Acknowledgement>
                         </Acknowledgement></div>
 
                 </h2>
-                <span className="selection-grid">
-                    <NativeSelect
-                        className="mapToggle"
-                        onChange={toggleData}
-                    >
-                        <option value="confirmed-cases">Confirmed cases</option>
-                        <option value="relative-cases">Cases per million people</option>
-                        <option value="tested">Tested</option>
-                        <option value="relative-tests">Tests per million people</option>
-                        {/*<option value="deaths">Deaths</option>*/}
 
-                        <option value="test-strike">Positive test rate</option>
-                    </NativeSelect>
-                </span>
+                {i18next.t("homePage:caseByState.buttonPrompt")}&nbsp;
+                <ButtonGroup aria-label="small outlined button group">
 
-                <Chart
+                    <Tooltip title="Current active cases" arrow>
+                        <Button style={mapType === "active-cases" ? activeStylesPink : inactiveStylesRed} value="active-cases" onClick={() => setMapType("active-cases")}>Active</Button>
+                    </Tooltip>
+                    <Tooltip title="Confirmed cases so far" arrow>
+                        <Button style={mapType === "confirmed-cases" ? activeStylesRed : inactiveStylesRed} value="confirmed-cases" onClick={() => setMapType("confirmed-cases")}>{i18next.t("homePage:status.Cases")}</Button>
+                    </Tooltip>
+                    <Tooltip title="Confirmed cases per million people" arrow>
+                        <Button style={mapType === "relative-cases" ? activeStylesRed : inactiveStylesRed} value="relative-cases" onClick={() => setMapType("relative-cases")}>{i18next.t("homePage:status.casePM")}</Button>
+                    </Tooltip>
+                    <Tooltip title="Tests carried out so far" arrow>
+                        <Button style={mapType === "tested" ? activeStyles : inactiveStyles} value="tested" onClick={() => setMapType("tested")}>{i18next.t("homePage:status.Tested")}</Button>
+                    </Tooltip>
+                    {/*  <Tooltip title="Tests carried out per million people" arrow>
+                        <Button style={mapType === "relative-tests" ? activeStyles : inactiveStyles} value="relative-tests" onClick={() => setMapType("relative-tests")}>{i18next.t("homePage:status.testPM")}</Button>
+                    </Tooltip>*/}
+                    <Tooltip title="Percentage of positive test cases" arrow>
+                        <Button style={mapType === "test-strike" ? activeStyles : inactiveStyles} value="test-strike" onClick={() => setMapType("test-strike")}>{i18next.t("homePage:status.positiveP")}</Button>
+                    </Tooltip>
+                </ButtonGroup>
+
+
+                <GoogleMapDropin
                     width={window.innerWidth < 960 ? '100%' : 'auto'}
+                    height="28vh"
                     left="auto"
                     align="right"
                     top="40%"

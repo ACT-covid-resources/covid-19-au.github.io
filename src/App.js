@@ -1,9 +1,11 @@
+import "bootstrap-scss/bootstrap.scss";
+import "./App.css";
+
 import React, {
   useState,
-  Suspense,
   useEffect,
-  useRef
 } from "react";
+
 import keyBy from "lodash.keyby";
 import dayjs from "dayjs";
 import "dayjs/locale/en-au";
@@ -12,8 +14,6 @@ import relativeTime from "dayjs/plugin/relativeTime";
 
 import all from "./data/overall";
 import provinces from "./data/area";
-import information from "./data/info";
-import mapDataHos from "./data/mapdataHos";
 
 
 import Fallback from "./fallback"
@@ -23,33 +23,28 @@ import DailyHistoryPage from "./DailyHistoryPage";
 import NewsPage from "./NewsPage";
 import InfoPage from "./InfoPage";
 import Navbar from "./Navbar";
-import HomePage from "./HomePage/HomePage"
+import HomePage from "./HomePage/HomePage";
+import StatesPage from "./StatesPage";
+import WorldPage from "./WorldPage";
+import BlogPage from "./BlogPage/BlogPage";
+import Blog from "./BlogPage/Blog";
+import AboutUsPage from "./aboutUs/AboutUsPage";
 
-import "./App.css";
-import uuid from "react-uuid";
-import ReactPlayer from "react-player";
+import StateChart from "./DataVis/StateChart";
+
+import DashboardConfig from "./DashboardConfig"
 
 // routes
-import { useRoutes, A } from 'hookrouter';
-// import {BrowserRouter as Router, Switch, Route, Link} from 'react-router-dom';
+import { useRoutes, usePath } from 'hookrouter';
 
 import ReactGA from "react-ga";
 
-
-import { TwitterTimelineEmbed } from "react-twitter-embed";
-
 import Grid from "@material-ui/core/Grid";
-import NewsTimeline from "./NewsTimeline";
-import { useTable, useFilters, useGlobalFilter, usePagination } from 'react-table'
 
 import stateCaseData from "./data/stateCaseData";
+import { Alert } from '@material-ui/lab';
+import Header from './Header';
 import SocialMediaShareModal from './socialMediaShare/SocialMediaShareModal';
-import ExpansionPanel from '@material-ui/core/ExpansionPanel';
-import ExpansionPanelSummary from '@material-ui/core/ExpansionPanelSummary';
-import ExpansionPanelDetails from '@material-ui/core/ExpansionPanelDetails';
-import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
-import { Alert, AlertTitle } from '@material-ui/lab';
-
 
 
 dayjs.extend(relativeTime);
@@ -60,31 +55,6 @@ ReactGA.pageview(window.location.pathname + window.location.search);
 
 const provincesByName = keyBy(provinces, "name");
 const provincesByPinyin = keyBy(provinces, "pinyin");
-
-
-function Header({ province }) {
-  return (
-    <header>
-      <div className="bg"></div>
-      <h1
-        style={{
-          fontSize: "120%",
-          color: "white",
-          textAlign: "center"
-        }}
-      >
-        COVID-19 in Australia — Real-Time Report
-      </h1>
-        <div className="slogan"><i>Stay Calm Stay Informed</i></div>
-      {/*<i>By Students from Monash</i>*/}
-    </header>
-  );
-}
-
-
-
-
-
 
 
 // This is a custom filter UI for selecting
@@ -209,10 +179,10 @@ function App() {
   const [nav, setNav] = useState("Home");
   // This is used to set the state of the page for navbar CSS styling.
   const [showSocialMediaIcons, setShowSocialMediaIcons] = useState(false);
-
   const setModalVisibility = state => {
     setShowSocialMediaIcons(state);
   };
+
   // // Set the routes for each page and pass in props.
   const routes = {
     "/": () => <HomePage province={province} overall={overall} myData={myData} area={area} data={data} setProvince={setProvince} gspace={gspace} />,
@@ -220,53 +190,137 @@ function App() {
     "/news": () => <NewsPage province={province} gspace={gspace} />,
     "/faq": () => <FAQPage />,
     "/dailyHistory": () => <DailyHistoryPage />,
+    "/world": () => <WorldPage />,
+    "/state": () => <StatesPage />,
+
+    // Remember to update these based on how many
+    // cases there currently are in each state/territory!
+    "/state/vic": () => <StateChart state="VIC"
+                                    dataType={"status_active"}
+                                    timePeriod={null} />,
+    "/state/nsw": () => <StateChart state="NSW"
+                                    dataType={"status_active"}
+                                    timePeriod={null} />,
+    "/state/qld": () => <StateChart state="QLD"
+                                    dataType={"status_active"}
+                                    timePeriod={null} />,
+    "/state/act": () => <StateChart state="ACT"
+                                    dataType={"total"}
+                                    timePeriod={21} />,
+    "/state/sa": () => <StateChart state="SA"
+                                   dataType={"total"}
+                                   timePeriod={21} />,
+    "/state/wa": () => <StateChart state="WA"
+                                   dataType={"total"}
+                                   timePeriod={21} />,
+    "/state/nt": () => <StateChart state="NT"
+                                   dataType={"total"}
+                                   timePeriod={21} />,
+    "/state/tas": () => <StateChart state="TAS"
+                                    dataType={"status_active"}
+                                    timePeriod={null} />,
+
+    "/dashboard": () => <DashboardConfig province={province} myData={myData} overall={overall} inputData={data} setProvince={setProvince} area={area} />,
+    "/blog": () => <Blog />,
+    "/blog/:id": ({ id }) => <Blog id={id} />,
+    "/blog/post/:id": ({ id }) => <BlogPage id={id} />,
+    "/about-us": () => <AboutUsPage />
   };
   //
   // // The hook used to render the routes.
   const routeResult = useRoutes(routes);
   // const [urlPath, setUrlPath] = useState(window.location.pathname);
+  const path = usePath()
+
+  // if (path == "/dashboard") {
+  //   require('./DashboardConfig.css');
+  // }
+
   if (myData) {
-    return (
 
-      <div>
-        <SocialMediaShareModal
-          visible={showSocialMediaIcons}
-          onCancel={() => setShowSocialMediaIcons(false)}
-        />
-        <Grid container spacing={gspace} justify="center" wrap="wrap">
-          <Grid item xs={12} className="removePadding">
-            <Header province={province} />
-          </Grid>
-          <Grid item xs={12} className="removePadding">
-            <Navbar setNav={setNav} nav={nav} />
-            {/*<Navbar  province={province} overall={overall} myData={myData} area={area} data={data} setProvince={setProvince} gspace={gspace} columns={columns}/>*/}
-          </Grid>
-          {/*{nav === "Home" ? <HomePage province={province} overall={overall} myData={myData} area={area} data={data} setProvince={setProvince} gspace={gspace} /> : ""}*/}
-          {/*{nav === "Info" ? <InfoPage nav={nav} columns={columns} gspace={gspace} /> : ""}*/}
-          {/*{nav === "News" ? <NewsPage province={province} gspace={gspace} nav={nav} /> : ""}*/}
-          {/*{nav === "About" ? <FAQPage /> : ""}*/}
-          {/* routeResult renders the routes onto this area of the app function.
+    if (path == "/dashboard") {
+      if (window.innerHeight > window.innerWidth) {
+        return (
+          <div style={{ maxHeight: window.innerHeight }}>
+            <SocialMediaShareModal
+              visible={showSocialMediaIcons}
+              onCancel={() => setShowSocialMediaIcons(false)}
+            />
+            <Grid container spacing={gspace} justify="center" wrap="wrap">
+              <Grid item xs={12} className="removePadding">
+                <Header province={province} />
+              </Grid>
+              {routeResult}
+            </Grid>
+          </div >
+        )
+      }
+      else {
+        return (
+          <div style={{ maxHeight: window.innerHeight }}>
+            <SocialMediaShareModal
+              visible={showSocialMediaIcons}
+              onCancel={() => setShowSocialMediaIcons(false)}
+            />
+            <Grid container spacing={gspace} justify="center" wrap="wrap">
+              {routeResult}
+            </Grid>
+          </div >
+
+        )
+      }
+    }
+    else {
+      return (
+
+        <div>
+          <SocialMediaShareModal
+            visible={showSocialMediaIcons}
+            onCancel={() => setShowSocialMediaIcons(false)}
+          />
+          <Grid container spacing={gspace} justify="center" wrap="wrap">
+            <Grid item xs={12} className="removePadding">
+              <Header province={province} />
+            </Grid>
+            {window.location.href === "http://localhost:3008/" || window.location.href === "http://covid-19-au.com/" || window.location.href === "https://covid-19-au.com/" ?
+              <Alert style={{ width: '100%' }} severity="info">
+                {/*<AlertTitle><strong>Important!!</strong></AlertTitle>*/}
+
+                  <p style={{ fontSize: "0.85rem" }} className="card-text">
+                    Notice: <u>https://covid-19-au.com</u> is the only valid url of our website, others that linked to our website are not related to us.
+                  </p>
+              </Alert> : <div />}
+            <Grid item xs={12} className="removePadding">
+              <Navbar setNav={setNav} nav={nav} />
+              {/*<Navbar  province={province} overall={overall} myData={myData} area={area} data={data} setProvince={setProvince} gspace={gspace} columns={columns}/>*/}
+            </Grid>
+            {/*{nav === "Home" ? <HomePage province={province} overall={overall} myData={myData} area={area} data={data} setProvince={setProvince} gspace={gspace} /> : ""}*/}
+            {/*{nav === "Info" ? <InfoPage nav={nav} columns={columns} gspace={gspace} /> : ""}*/}
+            {/*{nav === "News" ? <NewsPage province={province} gspace={gspace} nav={nav} /> : ""}*/}
+            {/*{nav === "About" ? <FAQPage /> : ""}*/}
+            {/* routeResult renders the routes onto this area of the app function.
           E.g. if routeResult is moved to the navBar, the pages will render inside the navbar. */}
-          {routeResult}
-          {/*<Switch>*/}
-          {/*<Route path="/" render={() => (*/}
-          {/*<HomePage province={province} overall={overall} myData={myData} area={area} data={data} setProvince={setProvince} gspace={gspace} />*/}
-          {/*)} exact/>*/}
-          {/*<Route path="/info" render={() => (*/}
-          {/*<InfoPage columns={columns} />*/}
-          {/*)} exact/>*/}
-          {/*<Route path="/news" render={() => (*/}
-          {/*<NewsPage province={province} gspace={gspace}/>*/}
-          {/*)} exact/>*/}
-          {/*<Route path="/faq" component={FAQPage} exact/>*/}
-          {/*</Switch>*/}
-          <Grid item xs={11}>
-            <Fallback setModalVisibility={setModalVisibility} setNav={setNav} nav={nav} />
+            {routeResult}
+            {/*<Switch>*/}
+            {/*<Route path="/" render={() => (*/}
+            {/*<HomePage province={province} overall={overall} myData={myData} area={area} data={data} setProvince={setProvince} gspace={gspace} />*/}
+            {/*)} exact/>*/}
+            {/*<Route path="/info" render={() => (*/}
+            {/*<InfoPage columns={columns} />*/}
+            {/*)} exact/>*/}
+            {/*<Route path="/news" render={() => (*/}
+            {/*<NewsPage province={province} gspace={gspace}/>*/}
+            {/*)} exact/>*/}
+            {/*<Route path="/faq" component={FAQPage} exact/>*/}
+            {/*</Switch>*/}
+            <Grid item xs={12}>
+              <Fallback setModalVisibility={setModalVisibility} setNav={setNav} nav={nav} />
+            </Grid>
           </Grid>
-        </Grid>
-      </div>
+        </div >
 
-    );
+      );
+    }
   }
   return null;
 }

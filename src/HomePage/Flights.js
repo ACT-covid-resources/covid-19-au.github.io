@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import ReactGA from "react-ga";
 import uuid from "react-uuid";
 import Acknowledgement from "../Acknowledgment"
+// import i18n bundle
+import i18next from '../i18n';
 
 const flightNoRegex = /^[A-Za-z]{2}\d*$/;
 const flightRouteRegex = /^[A-Za-z]*$/;
@@ -84,6 +86,37 @@ function sortFlight(flights) {
 }
 
 /**
+ * Method for formatting time into am/pm format
+ * @param {Date} date date
+ */
+function ordinal_suffix_of(i) {
+  var j = i % 10,
+      k = i % 100;
+  if (j == 1 && k != 11) {
+      return i + "st";
+  }
+  if (j == 2 && k != 12) {
+      return i + "nd";
+  }
+  if (j == 3 && k != 13) {
+      return i + "rd";
+  }
+  return i + "th";
+}
+
+/**
+ * Method for adding aria label for accessibility to flight row details
+ * @param {JSON} flight flight information
+ */
+function getAriaLabelForFlight(flight) {
+  var flightDateArrival = new Date(flight.dateArrival)
+  var flightDateStr = ordinal_suffix_of(flightDateArrival.getDate()) + ' of '
+  const month = flightDateArrival.toLocaleString('default', { month: 'long' });
+  flightDateStr += month + ' ' + flightDateArrival.getFullYear()
+  return `The close contact rows in Flight number ${flight.flightNo} of ${flight.airline} flying from ${flight.path} whose scheduled arrival date was ${flightDateStr} are ${flight.closeContactRow.split(",").join(",")}`
+}
+
+/**
  * User can search using flight number
  * @param {JSON} flights flights information
  */
@@ -116,45 +149,45 @@ function Flights({ flights }) {
   return (
     <div className="card">
 
-      <h2 style={{ display: "flex" }}>Flights<div style={{ alignSelf: "flex-end", marginLeft: "auto", fontSize: "60%" }}>
+      <h2 style={{ display: "flex" }} aria-label="Flights with reported COVID 19 cases">{i18next.t("homePage:flights.title")}<div style={{ alignSelf: "flex-end", marginLeft: "auto", fontSize: "60%" }}>
         <Acknowledgement>
         </Acknowledgement></div></h2>
       <div className="centerContent">
-        <div className="selfCenter standardWidth">
+        <div role={"table"} className="selfCenter standardWidth">
           <div className="searchArea">
             <div className="input-group mb-3">
               <div className="input-group-prepend">
-                <span className="input-group-text">Search</span>
+                <span className="input-group-text">{i18next.t("homePage:flights.searchButton")}</span>
               </div>
               <input
                 type="text"
                 className="form-control"
-                placeholder="Enter flight number, route, arrival date"
+                placeholder={i18next.t("homePage:flights.searchPlaceholder")}
                 onChange={e => setSearchKey(e.target.value)}
               ></input>
             </div>
           </div>
 
           <div className="flightInfo header">
-            <div className="area header">Flight No</div>
-            <div className="area header">Airline</div>
-            <div className="area header">Route</div>
-            <div className="area header">Arrival</div>
-            <div className="area header">Close Contact Row</div>
+            <div className="area header">{i18next.t("homePage:flights.tableHeader1")}</div>
+            <div className="area header">{i18next.t("homePage:flights.tableHeader2")}</div>
+            <div className="area header">{i18next.t("homePage:flights.tableHeader3")}</div>
+            <div className="area header">{i18next.t("homePage:flights.tableHeader4")}</div>
+            <div className="area header">{i18next.t("homePage:flights.tableHeader5")}</div>
           </div>
           {outputList.length ? (
-            outputList.map(flight => (
-              <div key={uuid()} className="flightInfo header">
-                <div className="flightArea">{flight.flightNo}</div>
-                <div className="flightArea">{flight.airline}</div>
-                <div className="flightArea">{flight.path}</div>
-                <div className="flightArea">{flight.dateArrival}</div>
-                <div className="flightArea">{flight.closeContactRow}</div>
-              </div>
-            ))
-          ) : (
-              <></>
-            )}
+        outputList.map(flight => (
+          <div role={"button"} aria-label={getAriaLabelForFlight(flight)} aria-describedby={getAriaLabelForFlight(flight)} className="flightInfo header" key={uuid()}>
+            <div className="flightArea">{flight.flightNo}</div>
+            <div className="flightArea">{flight.airline}</div>
+            <div className="flightArea">{flight.path}</div>
+            <div className="flightArea">{flight.dateArrival}</div>
+            <div className="flightArea">{flight.closeContactRow}</div>
+          </div>
+        ))
+      ) : (
+          <></>
+        )}
         </div>
       </div>
     </div>
