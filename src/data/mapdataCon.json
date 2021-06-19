@@ -1,47 +1,14 @@
 [
   {
-    "state": "NSW",
-    "area": "",
-    "name": "St Brendan’s Catholic Church Bankstown",
-    "date": "16/07/20",
-    "time": "for one hour from 6.30pm",
-    "description": "St Brendan’s Catholic Church Bankstown for one hour from 6.30pm on July 16",
-    "coor": [-33.9220903,151.0277432]
-  },
-  {
-    "state": "NSW",
-    "area": "",
-    "name": "Funeral service at St Brendan’s Catholic Church Bankstown",
-    "date": "18/07/20",
-    "time": "for one hour from 10am",
-    "description": "Funeral service at St Brendan’s Catholic Church Bankstown for one hour from 10am on July 18",
-    "coor": [-33.92, 151.02]
-  },
-  {
-    "state": "NSW",
-    "area": "",
-    "name": "Ausia Funeral Services at Fairfield East",
-    "date": "17/07/20",
-    "time": "between 1pm and 8pm",
-    "description": "Ausia Funeral Services at Fairfield East between 1pm and 8pm on July 17",
-    "coor": [-33.8694413,150.9710268]
-  },
-  {
-    "state": "NSW",
-    "area": "",
-    "name": "Burial service at St John of God Lawn at Rookwood",
-    "date": "18/07/20",
-    "time": "between 11.30-1pm",
-    "description": "Burial service at St John of God Lawn at Rookwood between 11.30-1pm on July 18",
-    "coor": [-33.879086,151.057859]
-  },
-  {
-    "state": "NSW",
-    "area": "",
-    "name": "Our Lady of Mt Carmel at Mt Pritchard",
-    "date": "19/07/20",
-    "time": "for one hour from 7.30am",
-    "description": "Our Lady of Mt Carmel at Mt Pritchard for one hour from 7.30am on July 19",
-    "coor": [-33.8947405,150.8992737]
+    "state": "VIC",
+    "area": "Melbourne",
+    "name": "Exford Hotel",
+    "venue": "Exford Hotel",
+    "type": "isolate",
+    "date": "29/1/21",
+    "time": "23:00-23:35",
+    "description": "immediately isolate, get a coronavirus (COVID-19) test, and remain isolated for 14 days.",
+    "lat": "-37.8118033",
+    "long":  "144.9651682"
   }
 ]

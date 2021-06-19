@@ -25,7 +25,7 @@ SOFTWARE.
 import CasesPopup from "./CasesPopup";
 import getMapBoxCaseColors from "../getMapBoxCaseColors";
 
-const FILL_OPACITY = 0.37;
+const FILL_OPACITY = 0.4;
 
 
 class CasesFillPolyLayer {
@@ -145,6 +145,21 @@ class CasesFillPolyLayer {
             map.removeLayer(this.uniqueId + 'fillpoly');
 
             this.__shown = false;
+        }
+    }
+
+    /**
+     * Remove popups
+     */
+    removePopups() {
+        if (this.__shown) {
+            this.__casesPopup.disablePopups();
+        }
+    }
+
+    enablePopups() {
+        if (this.__shown) {
+            this.__casesPopup.enablePopups();
         }
     }
 }

@@ -1,61 +1,55 @@
-import "bootstrap-scss/bootstrap.scss";
-import "./App.css";
-
-import React, {
-  useState,
-  useEffect,
-} from "react";
+import React, { useState, useEffect } from "react";
+import { createMuiTheme, ThemeProvider } from '@material-ui/core/styles';
+import CssBaseline from '@material-ui/core/CssBaseline';
+import { useRoutes, usePath } from 'hookrouter';
+import ReactGA from "react-ga";
+import Grid from "@material-ui/core/Grid";
+import { Alert } from '@material-ui/lab';
 
 import keyBy from "lodash.keyby";
 import dayjs from "dayjs";
 import "dayjs/locale/en-au";
 import relativeTime from "dayjs/plugin/relativeTime";
 
-
-import all from "./data/overall";
 import provinces from "./data/area";
 
-
-import Fallback from "./fallback"
-
-import FAQPage from "./FAQPage";
-import DailyHistoryPage from "./DailyHistoryPage";
-import NewsPage from "./NewsPage";
-import InfoPage from "./InfoPage";
-import Navbar from "./Navbar";
-import HomePage from "./HomePage/HomePage";
-import StatesPage from "./StatesPage";
-import WorldPage from "./WorldPage";
-import BlogPage from "./BlogPage/BlogPage";
-import Blog from "./BlogPage/Blog";
-import AboutUsPage from "./aboutUs/AboutUsPage";
-
-import StateChart from "./DataVis/StateChart";
-
-import DashboardConfig from "./DashboardConfig"
-
-// routes
-import { useRoutes, usePath } from 'hookrouter';
-
-import ReactGA from "react-ga";
-
-import Grid from "@material-ui/core/Grid";
+import Footer from "./common/Footer"
+import FAQPage from "./faq/FAQPage";
+import DailyHistoryPage from "./daily_history/DailyHistoryPage";
+import NewsPage from "./news/NewsPage";
+import InfoPage from "./info/InfoPage";
+import Navbar from "./common/Navbar";
+import HomePage from "./home/HomePage";
+import StatesPage from "./states/StatesPage";
+import WorldPage from "./world/WorldPage";
+import BlogPage from "./blog/BlogPage";
+import Blog from "./blog/Blog";
+import AboutUsPage from "./about_us/AboutUsPage";
+import StateChart from "./states/StateChart";
+import DashboardConfig from "./dashboard/DashboardConfig"
 
 import stateCaseData from "./data/stateCaseData";
-import { Alert } from '@material-ui/lab';
-import Header from './Header';
-import SocialMediaShareModal from './socialMediaShare/SocialMediaShareModal';
+import Header from './common/Header';
+import SocialMediaShareModal from './common/social_media_share/SocialMediaShareModal';
+import ColorManagement from "./common/color_management/ColorManagement";
+
+// Include either dark or light css based on the saved settings
+if (ColorManagement.getColorSchemeType() === ColorManagement.COLOR_SCHEME_LIGHT) {
+  require("bootstrap-scss/bootstrap.scss");
+  //require("bootswatch/dist/flatly/bootstrap.min.css");
+} else {
+  require("bootswatch/dist/darkly/bootstrap.min.css");
+}
+require("./App.css");
 
 
 dayjs.extend(relativeTime);
+
 ReactGA.initialize("UA-160673543-1");
-
 ReactGA.pageview(window.location.pathname + window.location.search);
-
 
 const provincesByName = keyBy(provinces, "name");
 const provincesByPinyin = keyBy(provinces, "pinyin");
-
 
 // This is a custom filter UI for selecting
 // a unique option from a list
@@ -90,7 +84,6 @@ function SelectColumnFilter({
     </select>
   )
 }
-
 
 
 function App() {
@@ -175,7 +168,6 @@ function App() {
     }));
 
   const area = province ? provincesByName[province.name].cities : provinces;
-  const overall = province ? province : all;
   const [nav, setNav] = useState("Home");
   // This is used to set the state of the page for navbar CSS styling.
   const [showSocialMediaIcons, setShowSocialMediaIcons] = useState(false);
@@ -183,9 +175,9 @@ function App() {
     setShowSocialMediaIcons(state);
   };
 
-  // // Set the routes for each page and pass in props.
+  // Set the routes for each page and pass in props.
   const routes = {
-    "/": () => <HomePage province={province} overall={overall} myData={myData} area={area} data={data} setProvince={setProvince} gspace={gspace} />,
+    "/": () => <HomePage province={province} overall={province} myData={myData} area={area} data={data} setProvince={setProvince} gspace={gspace} />,
     "/info": () => <InfoPage columns={columns} gspace={gspace} />,
     "/news": () => <NewsPage province={province} gspace={gspace} />,
     "/faq": () => <FAQPage />,
@@ -220,28 +212,70 @@ function App() {
                                     dataType={"status_active"}
                                     timePeriod={null} />,
 
-    "/dashboard": () => <DashboardConfig province={province} myData={myData} overall={overall} inputData={data} setProvince={setProvince} area={area} />,
+    "/dashboard": () => <DashboardConfig province={province} myData={myData} overall={province} inputData={data} setProvince={setProvince} area={area} />,
     "/blog": () => <Blog />,
     "/blog/:id": ({ id }) => <Blog id={id} />,
     "/blog/post/:id": ({ id }) => <BlogPage id={id} />,
     "/about-us": () => <AboutUsPage />
   };
-  //
-  // // The hook used to render the routes.
+
+  // The hook used to render the routes.
   const routeResult = useRoutes(routes);
-  // const [urlPath, setUrlPath] = useState(window.location.pathname);
   const path = usePath()
 
-  // if (path == "/dashboard") {
-  //   require('./DashboardConfig.css');
-  // }
+  const prefersDarkMode =
+      ColorManagement.getColorSchemeType() === ColorManagement.COLOR_SCHEME_DARK;
+  const theme = React.useMemo(
+    () =>
+      createMuiTheme({
+        palette: {
+          type: prefersDarkMode ? 'dark' : 'light',
+        },
+      }),
+    [prefersDarkMode],
+  );
 
   if (myData) {
-
     if (path == "/dashboard") {
       if (window.innerHeight > window.innerWidth) {
         return (
-          <div style={{ maxHeight: window.innerHeight }}>
+          <ThemeProvider theme={theme}>
+            <CssBaseline />
+            <div style={{ maxHeight: window.innerHeight }}>
+              <SocialMediaShareModal
+                visible={showSocialMediaIcons}
+                onCancel={() => setShowSocialMediaIcons(false)}
+              />
+              <Grid container spacing={gspace} justify="center" wrap="wrap">
+                <Grid item xs={12} className="removePadding">
+                  <Header province={province} />
+                </Grid>
+                {routeResult}
+              </Grid>
+            </div>
+          </ThemeProvider>
+        )
+      } else {
+        return (
+          <ThemeProvider theme={theme}>
+            <CssBaseline />
+            <div style={{ maxHeight: window.innerHeight }}>
+              <SocialMediaShareModal
+                visible={showSocialMediaIcons}
+                onCancel={() => setShowSocialMediaIcons(false)}
+              />
+              <Grid container spacing={gspace} justify="center" wrap="wrap">
+                {routeResult}
+              </Grid>
+            </div>
+          </ThemeProvider>
+        )
+      }
+    } else {
+      return (
+        <ThemeProvider theme={theme}>
+          <CssBaseline />
+          <div className={prefersDarkMode ? 'dark' : 'light'}>
             <SocialMediaShareModal
               visible={showSocialMediaIcons}
               onCancel={() => setShowSocialMediaIcons(false)}
@@ -250,75 +284,22 @@ function App() {
               <Grid item xs={12} className="removePadding">
                 <Header province={province} />
               </Grid>
+              {window.location.href === "http://localhost:3008/" || window.location.href === "http://covid-19-au.com/" || window.location.href === "https://covid-19-au.com/" ?
+                <Alert style={{ width: '100%' }} severity="info">
+                    <p style={{ fontSize: "0.85rem" }} className="card-text">
+                      Notice: <u>https://covid-19-au.com</u> is the only valid url of our website, others that linked to our website are not related to us.
+                    </p>
+                </Alert> : <div />}
+              <Grid item xs={12} className="removePadding">
+                <Navbar setNav={setNav} nav={nav} />
+              </Grid>
               {routeResult}
+              <Grid item xs={12}>
+                <Footer setModalVisibility={setModalVisibility} setNav={setNav} nav={nav} />
+              </Grid>
             </Grid>
-          </div >
-        )
-      }
-      else {
-        return (
-          <div style={{ maxHeight: window.innerHeight }}>
-            <SocialMediaShareModal
-              visible={showSocialMediaIcons}
-              onCancel={() => setShowSocialMediaIcons(false)}
-            />
-            <Grid container spacing={gspace} justify="center" wrap="wrap">
-              {routeResult}
-            </Grid>
-          </div >
-
-        )
-      }
-    }
-    else {
-      return (
-
-        <div>
-          <SocialMediaShareModal
-            visible={showSocialMediaIcons}
-            onCancel={() => setShowSocialMediaIcons(false)}
-          />
-          <Grid container spacing={gspace} justify="center" wrap="wrap">
-            <Grid item xs={12} className="removePadding">
-              <Header province={province} />
-            </Grid>
-            {window.location.href === "http://localhost:3008/" || window.location.href === "http://covid-19-au.com/" || window.location.href === "https://covid-19-au.com/" ?
-              <Alert style={{ width: '100%' }} severity="info">
-                {/*<AlertTitle><strong>Important!!</strong></AlertTitle>*/}
-
-                  <p style={{ fontSize: "0.85rem" }} className="card-text">
-                    Notice: <u>https://covid-19-au.com</u> is the only valid url of our website, others that linked to our website are not related to us.
-                  </p>
-              </Alert> : <div />}
-            <Grid item xs={12} className="removePadding">
-              <Navbar setNav={setNav} nav={nav} />
-              {/*<Navbar  province={province} overall={overall} myData={myData} area={area} data={data} setProvince={setProvince} gspace={gspace} columns={columns}/>*/}
-            </Grid>
-            {/*{nav === "Home" ? <HomePage province={province} overall={overall} myData={myData} area={area} data={data} setProvince={setProvince} gspace={gspace} /> : ""}*/}
-            {/*{nav === "Info" ? <InfoPage nav={nav} columns={columns} gspace={gspace} /> : ""}*/}
-            {/*{nav === "News" ? <NewsPage province={province} gspace={gspace} nav={nav} /> : ""}*/}
-            {/*{nav === "About" ? <FAQPage /> : ""}*/}
-            {/* routeResult renders the routes onto this area of the app function.
-          E.g. if routeResult is moved to the navBar, the pages will render inside the navbar. */}
-            {routeResult}
-            {/*<Switch>*/}
-            {/*<Route path="/" render={() => (*/}
-            {/*<HomePage province={province} overall={overall} myData={myData} area={area} data={data} setProvince={setProvince} gspace={gspace} />*/}
-            {/*)} exact/>*/}
-            {/*<Route path="/info" render={() => (*/}
-            {/*<InfoPage columns={columns} />*/}
-            {/*)} exact/>*/}
-            {/*<Route path="/news" render={() => (*/}
-            {/*<NewsPage province={province} gspace={gspace}/>*/}
-            {/*)} exact/>*/}
-            {/*<Route path="/faq" component={FAQPage} exact/>*/}
-            {/*</Switch>*/}
-            <Grid item xs={12}>
-              <Fallback setModalVisibility={setModalVisibility} setNav={setNav} nav={nav} />
-            </Grid>
-          </Grid>
-        </div >
-
+          </div>
+        </ThemeProvider>
       );
     }
   }
